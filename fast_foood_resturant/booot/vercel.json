@@ -2,14 +2,14 @@
   "version": 2,
   "builds": [
     {
-      "src": "main_server.py",
+      "src": "fast_foood_resturant/booot/main_server.py",
       "use": "@vercel/python"
     }
   ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "main_server.py"
+      "dest": "fast_foood_resturant/booot/main_server.py"
     }
   ]
 }
