@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة التحكم - إدارة المطعم الكاشير</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Tajawal', sans-serif; }
+        body { background-color: #f0f2f5; }
+        .navbar-custom { background: linear-gradient(135deg, #1e293b, #0f172a); }
+        .card-custom { border: none; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        .menu-img-preview { width: 45px; height: 45px; object-fit: cover; border-radius: 8px; }
+        
+        @media print {
+            body * { visibility: hidden; }
+            #printable-receipt, #printable-receipt * { visibility: visible; }
+            #printable-receipt { position: absolute; left: 0; top: 0; width: 100%; padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-dark navbar-custom mb-4 shadow-sm py-3">
+        <div class="container-fluid px-4">
+            <span class="navbar-brand mb-0 h1 fs-4 fw-bold"><i class="fa-solid fa-fire-flame-curved me-2 text-warning"></i> لوحة المطعم والكاشير</span>
+            <div class="d-flex align-items-center gap-3 text-white">
+                <span>👤 مرحباً، <strong>{{ current_user }}</strong> ({{ 'مدير' if role == 'admin' else 'كاشير' }})</span>
+                <a href="/logout" class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-right-from-bracket me-1"></i> خروج</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid px-4">
+        <div class="row g-4">
+            
+            {% if role == 'admin' %}
+            <!-- أدوات التحكم والمنيو المتاحة للآدمن فقط -->
+            <div class="col-lg-5">
+                
+                <!-- إضافة مستخدم/كاشير جديد -->
+                <div class="card card-custom mb-4 bg-white border-start border-4 border-warning">
+                    <div class="card-header bg-white border-0 pt-3 px-4">
+                        <h6 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-user-plus me-2 text-warning"></i> إضافة مستخدم جديد (كاشير/مراقب)</h6>
+                    </div>
+                    <div class="card-body px-4 pb-4">
+                        <form onsubmit="handleAddUser(event)" class="row g-2">
+                            <div class="col-5"><input type="text" id="new-user-name" class="form-control" placeholder="اسم المستخدم" required></div>
+                            <div class="col-4"><input type="password" id="new-user-pass" class="form-control" placeholder="كلمة السر" required></div>
+                            <div class="col-3"><button type="submit" class="btn btn-warning w-100 fw-bold">إضافة</button></div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- إضافة قسم جديد -->
+                <div class="card card-custom mb-4 bg-white">
+                    <div class="card-header bg-white border-0 pt-3 px-4">
+                        <h6 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-folder-plus me-2 text-success"></i> إضافة قسم جديد (Category)</h6>
+                    </div>
+                    <div class="card-body px-4 pb-4">
+                        <form onsubmit="handleAddCategory(event)" class="row g-2">
+                            <div class="col-8"><input type="text" id="cat-name" class="form-control" placeholder="اسم القسم" required></div>
+                            <div class="col-4"><input type="text" id="cat-icon" class="form-control" placeholder="رمز 🍲"></div>
+                            <div class="col-12 mt-2"><button type="submit" class="btn btn-success w-100 fw-bold">حفظ القسم</button></div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- إضافة وجبة جديدة -->
+                <div class="card card-custom mb-4 bg-white">
+                    <div class="card-header bg-white border-0 pt-3 px-4">
+                        <h6 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-square-plus me-2 text-primary"></i> إضافة صنف جديد</h6>
+                    </div>
+                    <div class="card-body px-4 pb-4">
+                        <form id="add-item-form" onsubmit="handleAddItem(event)">
+                            <div class="mb-2"><input type="text" id="item-title" class="form-control" placeholder="اسم الصنف" required></div>
+                            <div class="row g-2 mb-2">
+                                <div class="col-4"><input type="number" id="item-price" class="form-control" placeholder="السعر" required></div>
+                                <div class="col-4">
+                                    <select id="item-unit" class="form-select">
+                                        <option value="كيلو">كيلو</option>
+                                        <option value="نصف كيلو">نصف كيلو</option>
+                                        <option value="ربع كيلو">ربع كيلو</option>
+                                        <option value="طبق فردي">طبق فردي</option>
+                                    </select>
+                                </div>
+                                <div class="col-4"><select id="item-category" class="form-select" required></select></div>
+                            </div>
+                            <div class="mb-3"><input type="file" id="item-image-file" class="form-control" accept="image/*"></div>
+                            <button type="submit" class="btn btn-primary w-100 fw-bold">حفظ الصنف للمنيو</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card card-custom bg-white">
+                    <div class="card-header bg-white border-0 pt-3 px-4"><h6 class="fw-bold mb-0">قائمة الأصناف الحالية</h6></div>
+                    <div class="card-body p-0"><ul class="list-group list-group-flush" id="menu-items-list"></ul></div>
+                </div>
+
+            </div>
+            {% endif %}
+
+            <!-- الشاشة الرئيسية لاستقبال الطلبات والطباعة (متاحة للجميع) -->
+            <div class="{% if role == 'admin' %}col-lg-7{% else %}col-lg-12{% endif %}">
+                <div class="card card-custom bg-white">
+                    <div class="card-header bg-white border-0 py-3 px-4 d-flex justify-content-between align-items-center">
+                        <h5 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-receipt me-2 text-primary"></i> الطلبات الواردة (الكاشير المباشر)</h5>
+                        <button class="btn btn-sm btn-light border" onclick="fetchOrders()"><i class="fa-solid fa-rotate me-1"></i> تحديث</button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0 text-center">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>العميل</th>
+                                        <th>الهاتف والعنوان</th>
+                                        <th>الأصناف والكميات</th>
+                                        <th>الإجمالي</th>
+                                        <th>الوقت</th>
+                                        <th>إجراء</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="orders-list"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- طباعة الفاتورة -->
+    <div id="printable-receipt" class="d-none">
+        <div style="text-align: center; border-bottom: 2px dashed #000; padding-bottom: 10px; margin-bottom: 15px;">
+            <h2 style="margin:0;">🥩 مطعم المشويات الفاخر 🥩</h2>
+            <p style="margin:5px 0 0 0;">إيصال طلب توصيل منازل</p>
+            <small id="rec-date"></small>
+        </div>
+        <div style="font-size: 15px; line-height: 1.6;">
+            <p style="margin: 3px 0;"><strong>رقم الأوردر:</strong> #<span id="rec-id"></span></p>
+            <p style="margin: 3px 0;"><strong>اسم العميل:</strong> <span id="rec-name"></span></p>
+            <p style="margin: 3px 0;"><strong>رقم الهاتف:</strong> <span id="rec-phone"></span></p>
+            <p style="margin: 3px 0;"><strong>العنوان:</strong> <span id="rec-address"></span></p>
+            <hr style="border-top: 1px dashed #000; margin: 10px 0;">
+            <p style="margin-bottom: 5px;"><strong>الأصناف والكميات:</strong></p>
+            <pre id="rec-items" style="font-family: inherit; font-size: 15px; white-space: pre-wrap; margin:0; background: #f9f9f9; padding: 8px;"></pre>
+            <hr style="border-top: 1px dashed #000; margin: 10px 0;">
+            <h3 style="text-align: left; margin: 10px 0;">المبلغ الإجمالي: <span id="rec-total"></span></h3>
+            <hr style="border-top: 1px dashed #000; margin: 10px 0;">
+            <!-- إضافة اسم الكاشير في أسفل الفاتورة -->
+            <div style="text-align: center; margin-top: 15px; font-size: 13px;">
+                <p style="margin: 0;"><strong>طُبع بواسطة الكاشير:</strong> {{ current_user }}</p>
+                <p style="margin: 2px 0; color: #555;">شكراً لزيارتكم ونتمنى لكم وجبة شهية! ❤️</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let globalOrders = [];
+        let categoriesData = {};
+        
+        // استخدام مقارنة نصوص سليمة يفهمها JS ومحرر الأكواد بدون أخطاء
+        const isAdmin = "{{ role }}" === "admin";
+
+        function fetchOrders() {
+            fetch('/api/orders')
+                .then(res => res.json())
+                .then(data => {
+                    globalOrders = data;
+                    let html = '';
+                    if (data.length === 0) {
+                        html = `<tr><td colspan="7" class="text-muted py-4">لا توجد طلبات جديدة حالياً...</td></tr>`;
+                    } else {
+                        data.forEach(o => {
+                            html += `
+                                <tr>
+                                    <td><span class="fw-bold text-secondary">#${o.id}</span></td>
+                                    <td><strong class="text-dark">${o.customer_name}</strong></td>
+                                    <td><div><a href="tel:${o.phone}" class="fw-bold text-decoration-none">${o.phone}</a></div><small class="text-muted">${o.address}</small></td>
+                                    <td class="text-start"><small class="fw-bold">${o.items.replace(/\n/g, '<br>')}</small></td>
+                                    <td class="fw-bold text-success">${o.total_price}</td>
+                                    <td class="text-muted small">${o.timestamp}</td>
+                                    <td><button class="btn btn-sm btn-dark fw-bold" onclick="printReceipt(${o.id})"><i class="fa-solid fa-print me-1"></i> طباعة</button></td>
+                                </tr>
+                            `;
+                        });
+                    }
+                    document.getElementById('orders-list').innerHTML = html;
+                });
+        }
+
+        function fetchCategoriesAndMenu() {
+            if (!isAdmin) return;
+            fetch('/api/categories')
+                .then(res => res.json())
+                .then(cats => {
+                    categoriesData = cats;
+                    let catSelectHtml = '';
+                    for (let key in cats) catSelectHtml += `<option value="${key}">${cats[key].name}</option>`;
+                    document.getElementById('item-category').innerHTML = catSelectHtml;
+                    fetchMenu();
+                });
+        }
+
+        function fetchMenu() {
+            fetch('/api/menu')
+                .then(res => res.json())
+                .then(data => {
+                    let html = '';
+                    for (let key in data) {
+                        let item = data[key];
+                        if (item.available) {
+                            let catName = categoriesData[item.category] ? categoriesData[item.category].name : 'عام';
+                            let imgTag = item.image ? `<img src="/uploads/${item.image}" class="menu-img-preview me-3">` : '';
+                            html += `
+                                <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+                                    <div class="d-flex align-items-center">${imgTag}<div><div class="fw-bold text-dark">${item.title} (${item.unit || ''})</div><small class="text-success fw-bold">${item.price} ج.م</small></div></div>
+                                    <button class="btn btn-sm btn-outline-danger border-0" onclick="deleteMenuItem('${key}')"><i class="fa-solid fa-trash-can"></i></button>
+                                </li>
+                            `;
+                        }
+                    }
+                    document.getElementById('menu-items-list').innerHTML = html;
+                });
+        }
+
+        function handleAddUser(event) {
+            event.preventDefault();
+            fetch('/api/users/add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username: document.getElementById('new-user-name').value,
+                    password: document.getElementById('new-user-pass').value,
+                    role: 'staff'
+                })
+            }).then(res => res.json()).then(data => {
+                alert(data.message);
+                document.getElementById('new-user-name').value = '';
+                document.getElementById('new-user-pass').value = '';
+            });
+        }
+
+        function handleAddCategory(event) {
+            event.preventDefault();
+            fetch('/api/categories/add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: document.getElementById('cat-name').value, icon: document.getElementById('cat-icon').value || '📌' })
+            }).then(() => fetchCategoriesAndMenu());
+        }
+
+        function handleAddItem(event) {
+            event.preventDefault();
+            const formData = new FormData();
+            formData.append('title', document.getElementById('item-title').value);
+            formData.append('price', document.getElementById('item-price').value);
+            formData.append('unit', document.getElementById('item-unit').value);
+            formData.append('category', document.getElementById('item-category').value);
+            const fileInput = document.getElementById('item-image-file');
+            if (fileInput.files[0]) formData.append('image', fileInput.files[0]);
+
+            fetch('/api/menu/add', { method: 'POST', body: formData }).then(() => fetchMenu());
+        }
+
+        function deleteMenuItem(itemId) {
+            if (confirm('حذف الصنف؟')) fetch(`/api/menu/delete/${itemId}`, { method: 'DELETE' }).then(() => fetchMenu());
+        }
+
+        function printReceipt(orderId) {
+            const order = globalOrders.find(o => o.id === orderId);
+            if (!order) return;
+            document.getElementById('rec-id').innerText = order.id;
+            document.getElementById('rec-name').innerText = order.customer_name;
+            document.getElementById('rec-address').innerText = order.address;
+            document.getElementById('rec-phone').innerText = order.phone;
+            document.getElementById('rec-items').innerText = order.items;
+            document.getElementById('rec-total').innerText = order.total_price;
+            document.getElementById('rec-date').innerText = order.timestamp;
+            document.getElementById('printable-receipt').classList.remove('d-none');
+            window.print();
+            document.getElementById('printable-receipt').classList.add('d-none');
+        }
+
+        setInterval(fetchOrders, 2000);
+        fetchOrders();
+        if (isAdmin) fetchCategoriesAndMenu();
+    </script>
+</body>
+</html>

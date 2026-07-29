@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تسجيل الدخول - لوحة التحكم</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Tajawal', sans-serif; }
+        body { background: linear-gradient(135deg, #0f172a, #1e293b); height: 100vh; display: flex; align-items: center; justify-content: center; }
+        .login-card { background: white; border-radius: 20px; width: 100%; max-width: 420px; padding: 35px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+    </style>
+</head>
+<body>
+
+    <div class="login-card">
+        <div class="text-center mb-4">
+            <h3 class="fw-bold text-dark">🥩 مطعم المشويات</h3>
+            <p class="text-muted small">
+                {% if not has_admin %}
+                    🔥 أهلاً بك! قم بإنشاء حساب المدير (Admin) لأول مرة
+                {% else %}
+                    يرجى تسجيل الدخول للوصول للوحة التحكم
+                {% endif %}
+            </p>
+        </div>
+
+        <div id="alert-box" class="alert alert-danger d-none py-2 small text-center"></div>
+
+        <form id="login-form" onsubmit="handleLogin(event)">
+            <div class="mb-3">
+                <label class="form-label fw-bold small">اسم المستخدم</label>
+                <input type="text" id="username" class="form-control" placeholder="اسم المستخدم" required>
+            </div>
+            <div class="mb-4">
+                <label class="form-label fw-bold small">كلمة السر</label>
+                <input type="password" id="password" class="form-control" placeholder="••••••••" required>
+            </div>
+            <button type="submit" id="submit-btn" class="btn btn-primary w-100 fw-bold py-2">
+                {% if not has_admin %}
+                    🚀 إنشاء حساب الأدمن والبدء
+                {% else %}
+                    تسجيل الدخول
+                {% endif %}
+            </button>
+        </form>
+    </div>
+
+    <script>
+        function handleLogin(e) {
+            e.preventDefault();
+            const alertBox = document.getElementById('alert-box');
+            const submitBtn = document.getElementById('submit-btn');
+            
+            alertBox.classList.add('d-none');
+            submitBtn.disabled = true;
+            submitBtn.innerText = 'جاري التحميل...';
+
+            fetch('/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username: document.getElementById('username').value,
+                    password: document.getElementById('password').value
+                })
+            })
+            .then(async res => {
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    window.location.href = data.redirect || '/';
+                } else {
+                    alertBox.innerText = data.message || 'حدث خطأ في الاتصال!';
+                    alertBox.classList.remove('d-none');
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = 'حاول مرة أخرى';
+                }
+            })
+            .catch(err => {
+                alertBox.innerText = 'حدث خطأ أثناء الاتصال بالسيرفر!';
+                alertBox.classList.remove('d-none');
+                submitBtn.disabled = false;
+                submitBtn.innerText = 'حاول مرة أخرى';
+            });
+        }
+    </script>
+</body>
+</html>
+
+
